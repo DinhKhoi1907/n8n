@@ -1,6 +1,6 @@
 # Enterprise License Mechanism — Chi tiết cơ chế hoạt động
 
-> **Mục đích:** Giải thích cách n8n quản lý, xác thực và enforce các tính năng Enterprise  
+> **Mục đích:** Giải thích cách n8n quản lý, xác thực và enforce các tính năng Enterprise
 > xuyên suốt backend, frontend và hạ tầng license server.
 
 ---
@@ -236,11 +236,7 @@ if (!settingsStore.isCustomRolesFeatureEnabled) {
   upgradeModalVisible.value = true;  // Hiện modal "Upgrade to Enterprise"
   return;
 }
-// ... cho phép thao tác
-```
-
-> **Lưu ý:** Frontend chỉ **phản ánh** trạng thái license, không thể bypass.
-> Nếu ai đó hack frontend để bỏ qua check → backend vẫn trả `403`.
+``
 
 ---
 
@@ -372,7 +368,6 @@ export class FeatureNotLicensedError extends UserError {
 1. **Signed certificate:** Ký bằng private key trên license server → không thể tạo cert giả
 2. **Closed-source SDK:** `@n8n_io/license-sdk` là package private, chứa logic verify → không thể patch dễ dàng
 3. **Server-side enforcement:** Backend check ở middleware level → hack frontend không có tác dụng
-4. **No local bypass:** Không có flag hay env variable nào để bỏ qua license check
 
 ---
 
