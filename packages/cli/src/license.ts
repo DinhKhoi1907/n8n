@@ -1,5 +1,5 @@
 import type { LicenseProvider } from '@n8n/backend-common';
-import { Logger } from '@n8n/backend-common';
+import { Logger, getDevLicenseOverrideValue } from '@n8n/backend-common';
 import { GlobalConfig } from '@n8n/config';
 import {
 	DEFAULT_WORKFLOW_HISTORY_PRUNE_LIMIT,
@@ -252,8 +252,10 @@ export class License implements LicenseProvider {
 	}
 
 	isLicensed(feature: BooleanLicenseFeature) {
-		// return this.manager?.hasFeatureEnabled(feature) ?? false;
-		return true;
+		const override = getDevLicenseOverrideValue(feature);
+		if (typeof override === 'boolean') return override;
+
+		return this.manager?.hasFeatureEnabled(feature) ?? false;
 	}
 
 	/** @deprecated Use `LicenseState.isDynamicCredentialsLicensed` instead. */
@@ -376,6 +378,9 @@ export class License implements LicenseProvider {
 	}
 
 	getValue<T extends keyof FeatureReturnType>(feature: T): FeatureReturnType[T] {
+		const override = getDevLicenseOverrideValue(feature);
+		if (override !== undefined) return override;
+
 		return this.manager?.getFeatureValue(feature) as FeatureReturnType[T];
 	}
 

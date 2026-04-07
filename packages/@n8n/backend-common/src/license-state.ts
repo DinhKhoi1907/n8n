@@ -3,6 +3,7 @@ import { LICENSE_FEATURES, UNLIMITED_LICENSE_QUOTA } from '@n8n/constants';
 import { Service } from '@n8n/di';
 import { UnexpectedError } from 'n8n-workflow';
 
+import { getDevLicenseOverrideValue } from './dev-license-override';
 import type { FeatureReturnType, LicenseProvider } from './types';
 
 class ProviderNotSetError extends UnexpectedError {
@@ -31,6 +32,11 @@ export class LicenseState {
 	 * If the feature is an array of strings, it checks if any of the features are licensed
 	 */
 	isLicensed(feature: BooleanLicenseFeature | BooleanLicenseFeature[]) {
+		if (typeof feature === 'string') {
+			const override = getDevLicenseOverrideValue(feature);
+			if (typeof override === 'boolean') return override;
+		}
+
 		this.assertProvider();
 
 		if (typeof feature === 'string') return this.licenseProvider.isLicensed(feature);
@@ -45,6 +51,9 @@ export class LicenseState {
 	}
 
 	getValue<T extends keyof FeatureReturnType>(feature: T): FeatureReturnType[T] {
+		const override = getDevLicenseOverrideValue(feature);
+		if (override !== undefined) return override;
+
 		this.assertProvider();
 
 		return this.licenseProvider.getValue(feature);

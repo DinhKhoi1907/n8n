@@ -1,5 +1,7 @@
 import { mockLogger } from '@n8n/backend-test-utils';
+import { DEV_LICENSE_AI_CREDITS, DEV_LICENSE_OVERRIDE_ENV } from '@n8n/backend-common';
 import type { GlobalConfig } from '@n8n/config';
+import { LICENSE_FEATURES, LICENSE_QUOTAS, UNLIMITED_LICENSE_QUOTA } from '@n8n/constants';
 import type { SettingsRepository } from '@n8n/db';
 import { LicenseManager } from '@n8n_io/license-sdk';
 import { mock } from 'jest-mock-extended';
@@ -30,12 +32,46 @@ const licenseConfig: GlobalConfig['license'] = {
 	cert: '',
 };
 
+afterEach(() => {
+	delete process.env[DEV_LICENSE_OVERRIDE_ENV];
+});
+
 describe('License', () => {
 	let license: License;
 	const instanceSettings = mock<InstanceSettings>({
 		instanceId: MOCK_INSTANCE_ID,
 		instanceType: 'main',
 		isLeader: true,
+	});
+
+	describe('development license override', () => {
+		beforeEach(async () => {
+			process.env[DEV_LICENSE_OVERRIDE_ENV] = 'true';
+
+			const globalConfig = mock<GlobalConfig>({
+				license: licenseConfig,
+				multiMainSetup: { enabled: false },
+			});
+			license = new License(mockLogger(), instanceSettings, mock(), mock(), globalConfig);
+			await license.init();
+			jest.clearAllMocks();
+		});
+
+		test('enables licensed features without consulting the SDK', () => {
+			expect(license.isLicensed(LICENSE_FEATURES.SHARING)).toBe(true);
+			expect(license.isLicensed(LICENSE_FEATURES.FOLDERS)).toBe(true);
+
+			expect(LicenseManager.prototype.hasFeatureEnabled).not.toHaveBeenCalled();
+		});
+
+		test('returns development quota overrides without consulting the SDK', () => {
+			expect(license.getUsersLimit()).toBe(UNLIMITED_LICENSE_QUOTA);
+			expect(license.getVariablesLimit()).toBe(UNLIMITED_LICENSE_QUOTA);
+			expect(license.getTeamProjectLimit()).toBe(UNLIMITED_LICENSE_QUOTA);
+			expect(license.getValue(LICENSE_QUOTAS.AI_CREDITS)).toBe(DEV_LICENSE_AI_CREDITS);
+
+			expect(LicenseManager.prototype.getFeatureValue).not.toHaveBeenCalled();
+		});
 	});
 
 	beforeEach(async () => {

@@ -1,0 +1,52 @@
+services:
+  n8n-source:
+    build:
+      context: .
+      dockerfile: scripts/dev-source-docker/Dockerfile
+    working_dir: /workspace
+    command: ["start-backend.sh"]
+    environment:
+      N8N_DEV_LICENSE_OVERRIDE: "true"
+      N8N_LISTEN_ADDRESS: "0.0.0.0"
+      N8N_HOST: "localhost"
+      PNPM_STORE_DIR: /pnpm/store
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "5678:5678"
+      - "5679:5679"
+    volumes:
+      - .:/workspace
+      - dev-source-pnpm-store:/pnpm/store
+      - dev-source-node-modules:/workspace/node_modules
+      - dev-source-n8n-data:/home/node/.n8n
+    stdin_open: true
+    tty: true
+
+  editor-ui-source:
+    build:
+      context: .
+      dockerfile: scripts/dev-source-docker/Dockerfile
+    profiles: ["ui"]
+    working_dir: /workspace
+    command: ["start-editor-ui.sh"]
+    environment:
+      PNPM_STORE_DIR: /pnpm/store
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+      VUE_APP_URL_BASE_API: "http://localhost:5678/"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - n8n-source
+    volumes:
+      - .:/workspace
+      - dev-source-pnpm-store:/pnpm/store
+      - dev-source-node-modules:/workspace/node_modules
+    stdin_open: true
+    tty: true
+
+volumes:
+  dev-source-pnpm-store:
+  dev-source-node-modules:
+  dev-source-n8n-data:
